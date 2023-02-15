@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import threading
 
-from PyQt5.QtWidgets import QWidget, QLabel
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout
 from PyQt5.QtGui import  QPixmap, QImage
 from PyQt5.QtCore import Qt, QThread
 
@@ -33,10 +33,16 @@ class VideoPlayerWidget(QWidget):
     
     def init_player(self):
         self.picture = QLabel(self)
+        image_layout = QGridLayout()
+        image_layout.addWidget(self.picture,1,1)
+        image_layout.setAlignment(Qt.AlignCenter)
+        self.setLayout(image_layout)
         # set image
         success, image = self.dataloader.get_image(self.frame_index)
+        print(image.width(), image.height())
+        self.setFixedSize(image.width(), image.height())
         if success:
-            self.picture.setPixmap(image.scaled(self.width(), self.height(), Qt.KeepAspectRatio))
+            self.picture.setPixmap(image)
     
     def show_video_images(self):
         self.clock = time.time()
@@ -44,7 +50,7 @@ class VideoPlayerWidget(QWidget):
             success, frame = self.dataloader.get_image(self.frame_index)
             if success:
                 self.frame_index += 1
-                self.picture.setPixmap(frame.scaled(self.width(), self.height(), Qt.KeepAspectRatio))
+                self.picture.setPixmap(frame)
             else:
                 print("read failed, no frame data")
                 success, frame = self.dataloader.get_image(self.frame_index)

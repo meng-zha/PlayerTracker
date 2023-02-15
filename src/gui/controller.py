@@ -19,7 +19,7 @@ class ControllerWidget(QWidget):
         self.status = self.STATUS_INIT
 
         self.executor = ThreadPoolExecutor(max_workers=5)
-        self.timer = VideoTimer()
+        self.timer = VideoTimer(section_length=50)
         self.timer.set_fps(fps)
         self.image_player = []
         self.timer.timeSignal.signal.connect(self.update)
@@ -27,12 +27,13 @@ class ControllerWidget(QWidget):
             imageLoader = ImageLoader(os.path.join(root_path,  f"camera_{i}"))
             self.image_player.append(VideoPlayerWidget(imageLoader))
         
-        bevLoader = BEVLoader(os.path.join(root_path, "pointclouds"))
-        self.bev_player = VideoPlayerWidget(bevLoader)
+        self.bevLoader = BEVLoader(os.path.join(root_path, "pointclouds"),\
+            "/home/zhangmeng/AB3DMOT_reid/results/basketball/diou_reid.txt")
+        self.bev_player = VideoPlayerWidget(self.bevLoader)
     
         self.play_button = QPushButton()
         self.play_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
-        self.play_button.clicked.connect(self.switch_video)
+        self.play_button.clicked.connect(self.play)
 
         self.pause_button = QPushButton()
         self.pause_button.setIcon(self.style().standardIcon(QStyle.SP_MediaPause))
@@ -50,18 +51,21 @@ class ControllerWidget(QWidget):
     def make_layout(self):
         main_layout = QHBoxLayout()
 
-        bev_box = QGroupBox("bev")
-        bev_layout = QVBoxLayout()
-        bev_layout.addWidget(self.bev_player)
-        bev_box.setLayout(bev_layout)
-        main_layout.addWidget(bev_box)
+        show_layout = QVBoxLayout()
+        show_box = QGroupBox()
 
         image_box = QGroupBox("images")
         image_layout = QGridLayout()
         for i in range(4):
-            image_layout.addWidget(self.image_player[i], i//2, i%2)
+            image_layout.addWidget(self.image_player[i], 0, i)
         image_box.setLayout(image_layout)
-        main_layout.addWidget(image_box)
+        show_layout.addWidget(image_box)
+
+        bev_box = QGroupBox("bev")
+        bev_layout = QVBoxLayout()
+        bev_layout.addWidget(self.bev_player)
+        bev_box.setLayout(bev_layout)
+        show_layout.addWidget(bev_box)
 
         control_box = QGroupBox("control")
         control_layout = QVBoxLayout()
@@ -70,21 +74,13 @@ class ControllerWidget(QWidget):
         control_layout.addWidget(self.terminal_line)
         control_box.setLayout(control_layout)
         control_box.setMaximumWidth(200)
+
+        show_box.setLayout(show_layout)
+
+        main_layout.addWidget(show_box)
         main_layout.addWidget(control_box)
 
         self.setLayout(main_layout)
-
-    def switch_video(self):
-        if self.status is self.STATUS_INIT:
-            self.timer.start()
-        elif self.status is self.STATUS_PLAYING:
-            self.timer.stop()
-        elif self.status is self.STATUS_PAUSE:
-            self.timer.start()
-
-        self.status = (self.STATUS_PLAYING,
-                       self.STATUS_PAUSE,
-                       self.STATUS_PLAYING)[self.status]
 
     def reset(self):
         self.timer.stop()
@@ -93,10 +89,10 @@ class ControllerWidget(QWidget):
             self.image_player[i].frame_index = 0
 
     def play(self):
-        self.timer.start()
-        self.status = self.STATUS_PLAYING
+        if self.timer.is_stopped():
+            self.bevLoader.reset(self.bev_player.frame_index)
+            self.timer.start()
 
     def stop(self):
-        self.timer.stop()
-        self.status = self.STATUS_PAUSE
-
+        if not self.timer.is_stopped():
+            self.timer.stop()
