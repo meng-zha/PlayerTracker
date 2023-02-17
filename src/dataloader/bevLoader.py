@@ -90,3 +90,45 @@ class BEVLoader:
         self.img = cv2.addWeighted(self.img, 1, self.marker, 1,0)
         img = QPixmap.fromImage(QImage(self.img.data, self.img.shape[1], self.img.shape[0], QImage.Format_RGB888))
         return success, img
+
+    def project(self, x, y):
+        x = x/self.resize_ratio + self.x_range[0]
+        y = y/self.resize_ratio + self.y_range[0]
+        return [x,y,-1.4]
+    
+    def project_box(self, trackid, start, end):
+        '''
+        return: 3d corner points of start, mid, end
+        '''
+        trajectory = self.trajectories[trackid]
+        index = (trajectory[:,0]>=start)*(trajectory[:,0]<=end)
+        result = {}
+        if sum(index) > 0:
+            l = 0.7
+            w = 0.7
+            h = 1.85
+            
+            # 3d bounding box corners
+            x_corners = [l/2,l/2,-l/2,-l/2,l/2,l/2,-l/2,-l/2]
+            y_corners = [w/2,-w/2,-w/2,w/2,w/2,-w/2,-w/2,w/2]
+            z_corners = [0,0,0,0,h,h,h,h]
+            
+            # rotate and translate 3d bounding box
+            for ind in [0, sum(index)//2, sum(index)-1]:
+                corners_3d = np.vstack([x_corners,y_corners,z_corners])
+                corners_3d[0,:] = corners_3d[0,:] + trajectory[index][ind,1]
+                corners_3d[1,:] = corners_3d[1,:] + trajectory[index][ind,2]
+                corners_3d[2,:] = corners_3d[2,:] + trajectory[index][ind,3]
+                result[int(trajectory[index][ind,0])] = corners_3d
+        return result
+
+    def delete(self, trackid, start = None, end = None):
+        if start == None:
+            start = -1
+        if end == None:
+            end = float('inf')
+        index = (self.trajectories[trackid][:,0]>=start)*(self.trajectories[trackid][:,0]<=end)
+        self.trajectories[trackid] = np.delete(self.trajectories[trackid], index, axis=0)
+        if len(self.trajectories[trackid]) == 0:
+            self.trajectories.pop(trackid)
+            self.track_ids.pop(trackid)

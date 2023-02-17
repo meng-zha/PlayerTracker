@@ -5,15 +5,7 @@ import threading
 
 from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout
 from PyQt5.QtGui import  QPixmap, QImage
-from PyQt5.QtCore import Qt, QThread
-
-class VideoPlayerThread(QThread):
-    def __init__(self, dataloader):
-        super().__init__()
-        self.player = VideoPlayerWidget(dataloader)
-    
-    def run(self):
-        self.player.show_video_images()
+from PyQt5.QtCore import Qt, pyqtSignal
 
 class VideoPlayerWidget(QWidget):
     def __init__(self, dataloader):
@@ -23,6 +15,9 @@ class VideoPlayerWidget(QWidget):
         self.clock = time.time()
 
         self.init_player()
+    
+    def reset(self, frame_index):
+        self.frame_index = frame_index
 
     def _ndarray_to_qimage(self, arr):
         h, w = arr.shape[:2]
@@ -39,13 +34,11 @@ class VideoPlayerWidget(QWidget):
         self.setLayout(image_layout)
         # set image
         success, image = self.dataloader.get_image(self.frame_index)
-        print(image.width(), image.height())
         self.setFixedSize(image.width(), image.height())
         if success:
             self.picture.setPixmap(image)
     
     def show_video_images(self):
-        self.clock = time.time()
         if self.dataloader is not None:
             success, frame = self.dataloader.get_image(self.frame_index)
             if success:
@@ -59,3 +52,23 @@ class VideoPlayerWidget(QWidget):
                 return
         else:
             print("open file or capturing device error, init again")
+
+class BEVPlayer(VideoPlayerWidget):
+    signal = pyqtSignal(list)
+    def __init__(self, dataloader):
+        super().__init__(dataloader)
+
+    def mousePressEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            x, y = float(e.x()), float(e.y())
+            global_position = self.dataloader.project(x, y)
+            self.signal.emit(global_position)
+
+class ImagePlayer(VideoPlayerWidget):
+    def __init__(self, dataloader):
+        super().__init__(dataloader)
+
+    def project_video_images(self, position):
+        success, frame = self.dataloader.project_image(max(0,self.frame_index-1), position)
+        if success:
+            self.picture.setPixmap(frame)
