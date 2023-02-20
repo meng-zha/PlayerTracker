@@ -1,4 +1,5 @@
 import os
+import sys
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
@@ -17,7 +18,14 @@ class Editor(QWidget):
         self.vis.create_window()
 
         widget = QtWidgets.QWidget()
-        hwnd = self.get_hwnd()
+        print(sys.platform)
+        if sys.platform == "win32":
+            # if windows
+            import win32gui
+            hwnd = win32gui.FindWindowEx(0, 0, None, "Open3D")
+        else:
+            # if linux
+            hwnd = self.get_hwnd()
         self.window = QtGui.QWindow.fromWinId(hwnd)    
         self.windowcontainer = self.createWindowContainer(self.window, widget)
         timer = QtCore.QTimer(self)
