@@ -132,3 +132,39 @@ class BEVLoader:
         if len(self.trajectories[trackid]) == 0:
             self.trajectories.pop(trackid)
             self.track_ids.pop(trackid)
+
+    def merge(self, trackid_master, trackid_slave, start=None, end=None):
+        if start == None:
+            start = -1
+        if end == None:
+            end = float('inf')
+        traj_master_former = self.trajectories[trackid_master][self.trajectories[trackid_master][:,0]<start]
+        traj_master_latter = self.trajectories[trackid_master][self.trajectories[trackid_master][:,0]>end]
+        index_master = (self.trajectories[trackid_master][:,0]>=start)*(self.trajectories[trackid_master][:,0]<=end)
+        traj_master = self.trajectories[trackid_master][index_master]
+        index_slave = (self.trajectories[trackid_slave][:,0]>=start)*(self.trajectories[trackid_slave][:,0]<=end)*(self.trajectories[trackid_slave][:,0]>max(traj_master[:,0]))
+        traj_slave = self.trajectories[trackid_slave][index_slave]
+        self.trajectories[trackid_master] = np.concatenate([traj_master_former, traj_master, traj_slave, traj_master_latter], axis=0)
+
+        index_slave = (self.trajectories[trackid_slave][:,0]>=start)*(self.trajectories[trackid_slave][:,0]<=end)
+        self.trajectories[trackid_slave] = np.delete(self.trajectories[trackid_slave], index_slave, axis=0)
+        if len(self.trajectories[trackid_slave]) == 0:
+            self.trajectories.pop(trackid_slave)
+            self.track_ids.pop(trackid_slave)
+
+    def split(self, trackid, frame=None):
+        if frame == None:
+            frame = float('inf')
+        index = self.trajectories[trackid][:,0]>=frame
+        traj_new = self.trajectories[trackid][index]
+        if len(traj_new) != 0:
+            trackid_new = max(self.track_ids) + 1
+            self.trajectories[trackid_new] = traj_new
+            self.track_ids.add(trackid_new)
+
+        self.trajectories[trackid] = np.delete(self.trajectories[trackid], index, axis=0)
+        if len(self.trajectories[trackid]) == 0:
+            self.trajectories.pop(trackid)
+            self.track_ids.pop(trackid)
+
+        

@@ -33,6 +33,14 @@ class Editor(QWidget):
         self.delete_button = QPushButton("Delete")
         self.delete_button.clicked.connect(self.delete)
 
+        self.merge_line = QLineEdit()
+        self.merge_button = QPushButton("Merge")
+        self.merge_button.clicked.connect(self.merge)
+
+        self.split_line = QLineEdit()
+        self.split_button = QPushButton("Split")
+        self.split_button.clicked.connect(self.split)
+
         self.show_line = QLineEdit()
         self.show_button = QPushButton("Show Points")
         self.show_button.clicked.connect(self.show_pcd)
@@ -64,6 +72,18 @@ class Editor(QWidget):
         delete_layout.addWidget(self.delete_button)
         delete_box.setLayout(delete_layout)
 
+        merge_box = QGroupBox("merge")
+        merge_layout = QHBoxLayout()
+        merge_layout.addWidget(self.merge_line)
+        merge_layout.addWidget(self.merge_button)
+        merge_box.setLayout(merge_layout)
+
+        split_box = QGroupBox("split")
+        split_layout = QHBoxLayout()
+        split_layout.addWidget(self.split_line)
+        split_layout.addWidget(self.split_button)
+        split_box.setLayout(split_layout)
+
         show_box = QGroupBox("show")
         show_layout = QHBoxLayout()
         show_layout.addWidget(self.show_line)
@@ -82,6 +102,26 @@ class Editor(QWidget):
             input_list = input_text.split(",")
             trackid, start, end = int(input_list[0]), int(input_list[1]), int(input_list[2])
             self.bevLoader.delete(trackid, start, end)
+        except:
+            msg_box = QMessageBox(QMessageBox.Critical, '错误', '出现错误,请重新输入')
+            msg_box.exec_()
+
+    def merge(self):
+        try:
+            input_text = self.merge_line.text()
+            input_list = input_text.split(",")
+            trackid_master, trackid_slave, start, end = int(input_list[0]), int(input_list[1]), int(input_list[2]), int(input_list[3])
+            self.bevLoader.merge(trackid_master, trackid_slave, start, end)
+        except:
+            msg_box = QMessageBox(QMessageBox.Critical, '错误', '出现错误,请重新输入')
+            msg_box.exec_()
+
+    def split(self):
+        try:
+            input_text = self.merge_line.text()
+            input_list = input_text.split(",")
+            trackid, frame = int(input_list[0]), int(input_list[1])
+            self.bevLoader.split(trackid, frame)
         except:
             msg_box = QMessageBox(QMessageBox.Critical, '错误', '出现错误,请重新输入')
             msg_box.exec_()
