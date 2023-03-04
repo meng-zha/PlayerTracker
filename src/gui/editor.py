@@ -100,6 +100,8 @@ class Editor(QWidget):
         show_box.setLayout(show_layout)
 
         main_layout.addWidget(delete_box)
+        main_layout.addWidget(merge_box)
+        main_layout.addWidget(split_box)
         main_layout.addWidget(show_box)
         main_layout.addWidget(self.windowcontainer)
         self.setLayout(main_layout)
